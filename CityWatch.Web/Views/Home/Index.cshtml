@@ -1,0 +1,177 @@
+﻿@model CityWatch.Web.Models.DeviceViewModel
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div class="x_panel">
+    <div class="x_title">
+        <div class="col-md-9 col-sm-12 col-xs-12">
+            <h3>Mapa</h3>
+            <p>Komunalac</p>
+        </div>
+        <div class="col-lg-3 col-md-12 col-sm-12 col-xs-12">
+            <div class="col-md-12 col-xs-12 col-sm-3" style="margin-top:5px;">
+                @Html.DropDownListFor(model => model.CategoryId, (IEnumerable<SelectListItem>)Model.CategoriesSelectList, new { @class = "form-control" })
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+    <div class="x_content" style="padding:5px;">
+        <center>
+            <div id="map"></div>
+        </center>
+
+    </div>
+</div>
+
+
+
+<style>
+    #map {
+        height: 45vw;
+        width: 70vw;
+        float: none;
+    }
+</style>
+
+@section Scripts{
+
+    <script>
+        $(document).ready(function () {
+            GetData(0);
+
+            $('select').on('change', function () {
+                GetData(this.value);
+            });
+
+        });
+
+        
+
+        console.log(fontAwesomeIcon);
+
+        function GetData(id) {
+            $.ajax({
+                url: '@Url.Action("GetDevicesList", "Home")' + "?id=" + id,
+                type: 'GET',
+                datatype: "json",
+                success: function (data) {
+                    //console.log(data);
+                    GenerateMap(data.data);
+                },
+                error: function (error) {
+                    alert(error);
+                }
+            });
+        }
+
+        function GenerateMap(pinData) {
+
+            var container = L.DomUtil.get('map'); if (container != null) { container._leaflet_id = null; }
+
+            var map = L.map('map').setView([45.34059074780746, 14.393852749498288], 13);
+
+            map.invalidateSize();
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+           
+
+
+            if (pinData.length != 0) {
+                pinData.forEach(function (element) {
+                    console.log(element);
+
+                    var fontAwesomeIcon = null;
+
+                    switch (element.categoryId) {
+                        case 1:
+                            fontAwesomeIcon = L.divIcon({
+                                html: '<i class="fas fa-dumpster fa-2x" style="color:' + (element.state == true ? 'green' : 'red') + ';"></i>',
+                                iconSize: [10, 10],
+                                className: 'myDivIcon'
+                            });
+                            break;
+                        case 2:
+                            fontAwesomeIcon = L.divIcon({
+                                html: '<i class="fas fa-circle fa-2x" style="color:' + (element.state == true ? 'green' : 'red') + ';"></i>',
+                                iconSize: [20, 20],
+                                className: 'myDivIcon'
+                            });
+                            break;
+                        case 3:
+                            fontAwesomeIcon = L.divIcon({
+                                html: '<i class="fas fa-parking fa-2x" style="color:' + (element.state == true ? 'green' : 'red') + ';"></i>',
+                                iconSize: [15, 15],
+                                className: 'myDivIcon'
+                            });
+                            break;
+                    }
+
+                    // create popup contents
+                    var customPopup = "<h2>" + element.name + "</h2>" + "<p> Posljednja izmjena: " +  GetDate(element.lastChange) + "</p><p>Stanje: " + (element.state ? "Prazno" : "Puno")  + "</p>";
+
+                    // specify popup options 
+                    var customOptions =
+                    {
+                        'maxWidth': '500',
+                        'className': 'custom'
+                    }
+
+
+                    L.marker(JSON.parse(element.pinPosition), { icon: fontAwesomeIcon }).addTo(map)
+                        .bindPopup(customPopup, customOptions).on('mouseover', function (e) {
+                        this.openPopup();
+                    }).on('mouseout', function (e) {
+                        this.closePopup();
+                    }).on('click', function (e) {
+                        ViewProject(element.id);
+                    });
+                });
+            }
+        }
+
+        function GetDate(dt) {
+            var date = new Date(dt);
+
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+
+            if (day < 10) {
+                day = '0' + day;
+            }
+            if (month < 10) {
+                month = '0' + month;
+            }
+
+            return day + '-' + month + '-' + year;
+        }
+
+        function getRandomColor() {
+            var letters = '0123456789ABCDEF';
+            var color = '#';
+            for (var i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+
+        // Get Details For Project
+        function ViewProject(id) {
+            alert("View Method Call for id " + id);
+            //window.open('@Url.Action("Details", "Project")/' + id, '_blank');
+        }
+
+    </script>
+
+
+
+}
